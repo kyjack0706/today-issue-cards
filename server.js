@@ -16,8 +16,8 @@ const write=x=>fs.writeFileSync(DATA,JSON.stringify(x,null,2));
 const strip=s=>(s||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
 const summary=(d,t)=>{d=strip(d);if(!d)return t+" 관련 최신 기사입니다. 원문에서 자세한 내용을 확인할 수 있습니다.";return d.split(/(?<=[.!?。！？])\s+/).filter(Boolean).slice(0,3).join(" ").slice(0,500)};
 async function search(q){
- let u=new URL(API);u.searchParams.set("q",q);u.searchParams.set("country","KR");u.searchParams.set("language","ko");u.searchParams.set("sort","published_at");u.searchParams.set("size","100");
- let r=await fetch(u);if(!r.ok)throw Error(r.status);return r.json();
+ let u=new URL(API);u.searchParams.set("q",q);u.searchParams.set("country","KR");u.searchParams.set("lang","ko");u.searchParams.set("sort","date");u.searchParams.set("size","100");
+ let r=await fetch(u);console.log("API status",r.status);if(!r.ok)throw Error(r.status);let j=await r.json();console.log("API result count",(j.results||j.articles||[]).length);return j;
 }
 async function refresh(){
  let map=new Map(read().map(x=>[x.url,x])),added=0;
