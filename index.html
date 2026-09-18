@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>오늘의 화제 이슈</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='80'%3E%F0%9F%93%B0%3C/text%3E%3C/svg%3E">
 <style>
   :root{
     --bg:#141413; --bg2:#1b1a18; --ink:#faf9f5; --sub:#b9b6ae; --mute:#6b6960;
@@ -20,15 +21,19 @@
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;transition:background .15s,color .15s;}
   .wrap{max-width:760px;margin:0 auto;padding:28px 20px 80px;}
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:10px;flex-wrap:wrap;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
   .brand{font-size:15px;letter-spacing:0.14em;color:var(--accent);font-weight:800;}
-  .right{display:flex;align-items:center;gap:12px;}
+  .status-row{margin-bottom:20px;}
   .status{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px;}
   .dot{width:7px;height:7px;border-radius:99px;background:#3fb950;box-shadow:0 0 0 3px rgba(63,185,80,0.18);}
   .dot.off{background:var(--mute);box-shadow:none;}
   .theme-toggle{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:var(--shadow);}
   .theme-btn{border:none;background:transparent;color:var(--mute);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;}
   .theme-btn.active{background:var(--accent);color:var(--tab-ink);}
+
+  .search-bar{margin-bottom:12px;}
+  .search-bar input{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:12px 16px;font-size:14px;font-family:inherit;box-shadow:var(--shadow);}
+  .search-bar input::placeholder{color:var(--mute);}
 
   .tabs{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px;flex-wrap:wrap;box-shadow:var(--shadow);}
   .tab{flex:1;min-width:58px;text-align:center;padding:10px 6px;border-radius:9px;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer;user-select:none;border:none;background:transparent;}
@@ -68,14 +73,18 @@
 <div class="wrap">
   <header>
     <div class="brand">ISSUE PICK</div>
-    <div class="right">
-      <div class="status"><span class="dot off" id="liveDot"></span><span id="liveText">연결 중…</span></div>
-      <div class="theme-toggle">
-        <button class="theme-btn" id="btnDark" title="어두운 배경">🌙 어두운</button>
-        <button class="theme-btn" id="btnLight" title="밝은 배경">☀️ 밝은</button>
-      </div>
+    <div class="theme-toggle">
+      <button class="theme-btn" id="btnDark" title="어두운 배경">🌙 어두운</button>
+      <button class="theme-btn" id="btnLight" title="밝은 배경">☀️ 밝은</button>
     </div>
   </header>
+  <div class="status-row">
+    <div class="status"><span class="dot off" id="liveDot"></span><span id="liveText">연결 중…</span></div>
+  </div>
+
+  <div class="search-bar">
+    <input id="globalSearch" type="text" placeholder="🔍 제목·키워드로 검색 (예: 아이폰, 손예진, 부동산...)">
+  </div>
 
   <div class="tabs">
     <button class="tab active" data-tab="live">실시간</button>
@@ -96,9 +105,8 @@
   </div>
 
   <div class="panel" id="panel-cat" style="display:none;">
-    <input id="catInput" type="text" placeholder="키워드 입력 (예: 아이폰, 손예진, 부동산...)">
     <div class="chips" id="catChips"></div>
-    <span class="hint">카테고리명이나 제목/요약에 포함된 단어로 검색돼요.</span>
+    <span class="hint">카테고리를 클릭해서 필터링하거나, 위 검색창을 사용하세요.</span>
   </div>
 
   <div class="panel" id="panel-date" style="display:none;">
@@ -168,8 +176,9 @@
   }
   hourSelect.addEventListener('change', ()=>{ hourFilter = hourSelect.value; render(); });
 
-  const catInput = document.getElementById('catInput');
-  catInput.addEventListener('input', ()=>{ catFilter = catInput.value.trim(); render(); });
+  const globalSearch = document.getElementById('globalSearch');
+  let searchQuery = '';
+  globalSearch.addEventListener('input', ()=>{ searchQuery = globalSearch.value.trim(); render(); });
 
   const catChipsEl = document.getElementById('catChips');
   function renderCatChips(){
@@ -179,7 +188,7 @@
       const b = document.createElement('button');
       b.className = 'chip' + (catFilter === c ? ' active' : '');
       b.textContent = c;
-      b.onclick = ()=>{ catFilter = (catFilter === c) ? '' : c; catInput.value = catFilter; render(); };
+      b.onclick = ()=>{ catFilter = (catFilter === c) ? '' : c; render(); };
       catChipsEl.appendChild(b);
     });
   }
@@ -210,15 +219,19 @@
     let items = allItems.slice();
     items.sort((a,b)=> new Date(b.ts) - new Date(a.ts));
 
-    if(activeTab === 'hour' && hourFilter !== ''){
-      items = items.filter(i => hourKST(new Date(i.ts)) === Number(hourFilter));
-    } else if(activeTab === 'cat' && catFilter){
-      const q = catFilter.toLowerCase();
+    if(searchQuery){
+      const q = searchQuery.toLowerCase();
       items = items.filter(i =>
         (i.category||'').toLowerCase().includes(q) ||
         (i.title||'').toLowerCase().includes(q) ||
         (i.summary||'').toLowerCase().includes(q)
       );
+    }
+
+    if(activeTab === 'hour' && hourFilter !== ''){
+      items = items.filter(i => hourKST(new Date(i.ts)) === Number(hourFilter));
+    } else if(activeTab === 'cat' && catFilter){
+      items = items.filter(i => (i.category||'') === catFilter);
     } else if(activeTab === 'date' && dateFilter){
       items = items.filter(i => dateStrKST(new Date(i.ts)) === dateFilter);
     } else if(activeTab === 'live'){
@@ -276,12 +289,17 @@
   const liveDot = document.getElementById('liveDot');
   const liveText = document.getElementById('liveText');
 
+  function nowKSTLabel(){
+    const k = toKST(new Date());
+    return String(k.getHours()).padStart(2,'0') + ':' + String(k.getMinutes()).padStart(2,'0');
+  }
+
   async function load(){
     try{
       const r = await fetch('/api/news');
       allItems = await r.json();
       liveDot.classList.remove('off');
-      liveText.textContent = '연결됨 · ' + allItems.length + '건';
+      liveText.textContent = '연결됨 · ' + allItems.length + '건 · ' + nowKSTLabel() + ' 업데이트';
     }catch(e){
       liveDot.classList.add('off');
       liveText.textContent = '연결 오류';
