@@ -7,37 +7,48 @@
 <style>
   :root{
     --bg:#141413; --bg2:#1b1a18; --ink:#faf9f5; --sub:#b9b6ae; --mute:#6b6960;
-    --line:#2a2924; --accent:#d97757;
+    --line:#2a2924; --accent:#d97757; --shadow:0 0 0 rgba(0,0,0,0);
     --tech:#5b8def; --ent:#f06595; --biz:#2f9e64; --soc:#f2994a; --sport:#71d7e4; --culture:#b58cff;
+    --new:#ff6b57; --new-ink:#1a1310; --tab-ink:#1a1310;
+  }
+  html[data-theme="light"]{
+    --bg:#faf9f5; --bg2:#ffffff; --ink:#1f1e1c; --sub:#5c594f; --mute:#9a968a;
+    --line:#e6e2d8; --accent:#c9603f; --shadow:0 1px 2px rgba(0,0,0,0.03);
+    --tech:#2f6fd6; --ent:#d1497a; --biz:#1f8a53; --soc:#d9822b; --sport:#1798a8; --culture:#8256d6;
+    --new:#c9402c; --new-ink:#fff; --tab-ink:#fff;
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;transition:background .15s,color .15s;}
   .wrap{max-width:760px;margin:0 auto;padding:28px 20px 80px;}
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:10px;flex-wrap:wrap;}
   .brand{font-size:15px;letter-spacing:0.14em;color:var(--accent);font-weight:800;}
+  .right{display:flex;align-items:center;gap:12px;}
   .status{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px;}
   .dot{width:7px;height:7px;border-radius:99px;background:#3fb950;box-shadow:0 0 0 3px rgba(63,185,80,0.18);}
   .dot.off{background:var(--mute);box-shadow:none;}
+  .theme-toggle{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:var(--shadow);}
+  .theme-btn{border:none;background:transparent;color:var(--mute);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  .theme-btn.active{background:var(--accent);color:var(--tab-ink);}
 
-  .tabs{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px;flex-wrap:wrap;}
+  .tabs{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px;flex-wrap:wrap;box-shadow:var(--shadow);}
   .tab{flex:1;min-width:58px;text-align:center;padding:10px 6px;border-radius:9px;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer;user-select:none;border:none;background:transparent;}
-  .tab.active{background:var(--accent);color:#1a1310;}
+  .tab.active{background:var(--accent);color:var(--tab-ink);}
 
-  .panel{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .panel{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;box-shadow:var(--shadow);}
   .panel input, .panel select{
-    background:#0f0f0e;border:1px solid var(--line);color:var(--ink);border-radius:8px;
+    background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;
     padding:9px 12px;font-size:14px;font-family:inherit;flex:1;min-width:140px;
   }
   .panel .hint{font-size:12px;color:var(--mute);width:100%;}
   .chips{display:flex;flex-wrap:wrap;gap:8px;}
-  .chip{padding:7px 14px;border-radius:999px;font-size:13px;border:1px solid var(--line);background:#0f0f0e;color:var(--sub);cursor:pointer;}
+  .chip{padding:7px 14px;border-radius:999px;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--sub);cursor:pointer;}
   .chip.active{border-color:var(--accent);color:var(--accent);background:rgba(217,119,87,0.1);}
 
   .count{font-size:13px;color:var(--mute);margin:0 2px 12px;}
-  .new-count{color:#ff6b57;font-weight:800;}
-  .new-badge{background:#ff6b57;color:#1a1310;font-size:10px;font-weight:900;letter-spacing:0.04em;padding:3px 7px;border-radius:5px;}
+  .new-count{color:var(--new);font-weight:800;}
+  .new-badge{background:var(--new);color:var(--new-ink);font-size:10px;font-weight:900;letter-spacing:0.04em;padding:3px 7px;border-radius:5px;}
 
-  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:14px;display:block;text-decoration:none;color:inherit;transition:border-color .15s;}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:14px;display:block;text-decoration:none;color:inherit;transition:border-color .15s, box-shadow .15s;box-shadow:var(--shadow);}
   a.card{cursor:pointer;}
   a.card:hover{border-color:var(--accent);}
   .link-hint{color:var(--accent);font-weight:700;}
@@ -57,7 +68,13 @@
 <div class="wrap">
   <header>
     <div class="brand">ISSUE PICK</div>
-    <div class="status"><span class="dot off" id="liveDot"></span><span id="liveText">연결 중…</span></div>
+    <div class="right">
+      <div class="status"><span class="dot off" id="liveDot"></span><span id="liveText">연결 중…</span></div>
+      <div class="theme-toggle">
+        <button class="theme-btn" id="btnDark" title="어두운 배경">🌙 어두운</button>
+        <button class="theme-btn" id="btnLight" title="밝은 배경">☀️ 밝은</button>
+      </div>
+    </div>
   </header>
 
   <div class="tabs">
@@ -95,6 +112,23 @@
 
 <script>
 (function(){
+  // ---- theme ----
+  const root = document.documentElement;
+  const btnDark = document.getElementById('btnDark');
+  const btnLight = document.getElementById('btnLight');
+  function applyTheme(t){
+    if(t === 'light'){ root.setAttribute('data-theme','light'); }
+    else { root.removeAttribute('data-theme'); }
+    btnDark.classList.toggle('active', t !== 'light');
+    btnLight.classList.toggle('active', t === 'light');
+    try{ localStorage.setItem('theme', t); }catch(e){}
+  }
+  let savedTheme = 'dark';
+  try{ savedTheme = localStorage.getItem('theme') || 'dark'; }catch(e){}
+  applyTheme(savedTheme);
+  btnDark.addEventListener('click', ()=>applyTheme('dark'));
+  btnLight.addEventListener('click', ()=>applyTheme('light'));
+
   const KST_OFFSET_MIN = 9 * 60;
   function toKST(d){ return new Date(d.getTime() + (KST_OFFSET_MIN + d.getTimezoneOffset()) * 60000); }
   function dateStrKST(d){
@@ -110,14 +144,14 @@
   }
 
   const CATEGORY_META = {
-    '기술': {color:'var(--tech)', bg:'rgba(91,141,239,0.14)', border:'rgba(91,141,239,0.4)'},
-    '연예': {color:'var(--ent)', bg:'rgba(240,101,149,0.14)', border:'rgba(240,101,149,0.4)'},
-    '경제': {color:'var(--biz)', bg:'rgba(47,158,100,0.14)', border:'rgba(47,158,100,0.4)'},
-    '사회': {color:'var(--soc)', bg:'rgba(242,153,74,0.14)', border:'rgba(242,153,74,0.4)'},
-    '스포츠': {color:'var(--sport)', bg:'rgba(113,215,228,0.14)', border:'rgba(113,215,228,0.4)'},
-    '문화': {color:'var(--culture)', bg:'rgba(181,140,255,0.14)', border:'rgba(181,140,255,0.4)'},
+    '기술': {color:'var(--tech)', bg:'rgba(91,141,239,0.12)', border:'rgba(91,141,239,0.4)'},
+    '연예': {color:'var(--ent)', bg:'rgba(240,101,149,0.12)', border:'rgba(240,101,149,0.4)'},
+    '경제': {color:'var(--biz)', bg:'rgba(47,158,100,0.12)', border:'rgba(47,158,100,0.4)'},
+    '사회': {color:'var(--soc)', bg:'rgba(242,153,74,0.12)', border:'rgba(242,153,74,0.4)'},
+    '스포츠': {color:'var(--sport)', bg:'rgba(113,215,228,0.12)', border:'rgba(113,215,228,0.4)'},
+    '문화': {color:'var(--culture)', bg:'rgba(181,140,255,0.12)', border:'rgba(181,140,255,0.4)'},
   };
-  function metaFor(cat){ return CATEGORY_META[cat] || {color:'var(--accent)', bg:'rgba(217,119,87,0.14)', border:'rgba(217,119,87,0.4)'}; }
+  function metaFor(cat){ return CATEGORY_META[cat] || {color:'var(--accent)', bg:'rgba(217,119,87,0.12)', border:'rgba(217,119,87,0.4)'}; }
 
   let allItems = [];
   let activeTab = 'live';
