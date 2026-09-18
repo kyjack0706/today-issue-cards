@@ -3,12 +3,12 @@ const PORT=process.env.PORT||3000,ROOT=__dirname,DATA=path.join(ROOT,"data/news.
 fs.mkdirSync(path.dirname(DATA),{recursive:true});if(!fs.existsSync(DATA))fs.writeFileSync(DATA,"[]");
 
 const QUERIES=[
-["기술","AI OR 인공지능 OR 반도체 OR 스마트폰 OR 애플 OR 삼성전자"],
-["연예","연예 OR 배우 OR 가수 OR 아이돌 OR 드라마 OR 영화 OR 예능"],
-["경제","경제 OR 주식 OR 증시 OR 코스피 OR 기업 OR 부동산 OR 금리"],
-["사회","사회 OR 생활 OR 교육 OR 소비 OR 여행"],
-["스포츠","스포츠 OR 축구 OR 야구 OR 농구 OR 배구 OR 골프"],
-["문화","문화 OR 전시 OR 공연 OR 축제"]
+["기술","AI OR 인공지능 OR 반도체"],
+["연예","연예 OR 배우 OR 드라마"],
+["경제","경제 OR 주식 OR 부동산"],
+["사회","사회 OR 교육 OR 소비"],
+["스포츠","스포츠 OR 축구 OR 야구"],
+["문화","문화 OR 전시 OR 공연"]
 ];
 const API="https://freenewsapi.ai/v1/search";
 const read=()=>{try{return JSON.parse(fs.readFileSync(DATA,"utf8"))}catch{return[]}};
