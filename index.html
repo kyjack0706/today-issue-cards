@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>오늘의 화제 이슈</title>
+<style>
+:root{--bg:#141413;--card:#1d1d1b;--text:#faf9f5;--muted:#aaa99f;--line:#30302d;--blue:#5aa9ff;--pink:#ff6fae;--green:#64d58a;--orange:#ff9b55;--purple:#b58cff}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+.wrap{max-width:920px;margin:auto;padding:34px 18px 70px}.eyebrow{color:#8f8e87;font-size:13px;letter-spacing:.08em}.head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin:6px 0 22px}.head h1{margin:0;font-size:34px;letter-spacing:-.05em}.count{color:var(--muted);font-size:14px}.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:12px}.tab,.chip{border:1px solid var(--line);background:#1a1a18;color:#bdbcb4;border-radius:999px;padding:9px 14px;cursor:pointer;white-space:nowrap}.tab.active,.chip.active{background:#faf9f5;color:#141413}.panel{margin:8px 0 20px;display:none}.panel.active{display:flex;gap:8px;flex-wrap:wrap}.panel input,.panel select{background:#1b1b19;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:11px 13px;outline:none}.cards{display:grid;gap:12px}.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-decoration:none;color:inherit;transition:.15s}.card:hover{transform:translateY(-2px);border-color:#555}.meta{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px}.cat{font-weight:700;padding:5px 8px;border-radius:999px}.cat.테크{background:#173b61;color:var(--blue)}.cat.연예{background:#4b2035;color:var(--pink)}.cat.경제{background:#183c2a;color:var(--green)}.cat.사회{background:#4b2c1d;color:var(--orange)}.cat.문화{background:#33244e;color:var(--purple)}.cat.스포츠{background:#253e43;color:#71d7e4}.new{margin-left:auto;background:#faf9f5;color:#141413;border-radius:999px;padding:4px 7px;font-weight:800;font-size:10px}.card h2{font-size:20px;line-height:1.35;margin:13px 0 8px;letter-spacing:-.03em}.summary{color:#c9c8c1;font-size:14px;line-height:1.65;margin:0 0 15px}.foot{display:flex;gap:9px;align-items:center;flex-wrap:wrap;color:#8f8e87;font-size:12px}.source{color:#ddd}.link{margin-left:auto;color:#fff;font-weight:700}.empty{padding:50px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px}
+@media(max-width:600px){.head{align-items:start;flex-direction:column}.head h1{font-size:28px}.card h2{font-size:18px}.link{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">KOREA · TODAY'S ISSUE</div>
+  <div class="head"><h1>오늘의 화제 이슈</h1><div class="count" id="count"></div></div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="live">실시간</button>
+    <button class="tab" data-tab="hour">시간별</button>
+    <button class="tab" data-tab="category">카테고리</button>
+    <button class="tab" data-tab="date">날짜</button>
+  </nav>
+  <div class="panel" id="hour"><select id="hourSelect"></select></div>
+  <div class="panel" id="category"><input id="query" placeholder="제목·요약·카테고리 검색"><div id="chips"></div></div>
+  <div class="panel" id="date"><input id="dateSelect" type="date"></div>
+  <main class="cards" id="cards"></main>
+</div>
+<script>
+const state={tab:"live",items:[]};
+const $=s=>document.querySelector(s);
+function koDate(iso){return new Intl.DateTimeFormat("ko-KR",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:"Asia/Seoul"}).format(new Date(iso))}
+function isNew(iso){return Date.now()-new Date(iso).getTime()<=3600000}
+function categories(){return [...new Set(state.items.map(x=>x.category))].sort()}
+function renderChips(){const box=$("#chips");box.innerHTML=categories().map(c=>`<button class="chip" data-cat="${c}">${c}</button>`).join("");box.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("#query").value=b.dataset.cat;render()})}
+function render(){
+ let a=[...state.items].sort((x,y)=>new Date(y.ts)-new Date(x.ts));
+ const q=$("#query")?.value.trim().toLowerCase();
+ if(state.tab==="hour"){const h=Number($("#hourSelect").value);a=a.filter(x=>{const d=new Date(x.ts);return Number(new Intl.DateTimeFormat("en-US",{hour:"numeric",hour12:false,timeZone:"Asia/Seoul"}).format(d))===h})}
+ if(state.tab==="category"&&q)a=a.filter(x=>(x.title+" "+x.summary+" "+x.category).toLowerCase().includes(q));
+ if(state.tab==="date"&&$("#dateSelect").value){const wanted=$("#dateSelect").value;a=a.filter(x=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(x.ts))===wanted)}
+ const n=a.filter(x=>isNew(x.ts)).length;
+ $("#count").textContent=`총 ${a.length}개 이슈 · NEW ${n}개`;
+ $("#cards").innerHTML=a.length?a.map(x=>{const href=x.url?`href="${x.url}" target="_blank" rel="noopener noreferrer"`:"";return `<a class="card" ${href}><div class="meta"><span class="cat ${x.category}">${x.category}</span><span>${koDate(x.ts)}</span>${isNew(x.ts)?'<span class="new">NEW</span>':''}</div><h2>${esc(x.title)}</h2><p class="summary">${esc(x.summary)}</p><div class="foot"><span class="source">${esc(x.source)}</span><span>${esc(x.tags)}</span>${x.url?'<span class="link">기사 보기 ↗</span>':''}</div></a>`}).join(""):`<div class="empty">조건에 맞는 이슈가 없습니다.</div>`;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+async function load(){
+ try{const r=await fetch("/api/news");state.items=await r.json()}catch{const r=await fetch("./data/news.json");state.items=await r.json()}
+ renderChips();render();
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.tab=b.dataset.tab;document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));if(state.tab!=="live")$("#"+state.tab).classList.add("active");render()});
+for(let h=0;h<24;h++)$("#hourSelect").insertAdjacentHTML("beforeend",`<option value="${h}">${String(h).padStart(2,"0")}시</option>`);
+const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const d=new Date();d.setDate(d.getDate()-6);const min=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+$("#dateSelect").min=min;$("#dateSelect").max=today;$("#dateSelect").value=today;
+$("#hourSelect").onchange=render;$("#query").oninput=render;$("#dateSelect").onchange=render;
+load();setInterval(load,60000);
+</script>
+</body>
+</html>
