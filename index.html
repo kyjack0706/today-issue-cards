@@ -70,6 +70,16 @@
 
   .empty{text-align:center;color:var(--mute);font-size:14px;padding:60px 20px;}
   .empty b{color:var(--sub);}
+
+  .card-star{border:none;background:transparent;color:var(--mute);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
+  .card-star.on{color:#f2b705;}
+
+  .backtop-hint{display:flex;justify-content:center;padding:18px 0 4px;}
+  .backtop-hint button{border:1px solid var(--line);background:var(--bg2);color:var(--sub);font-size:13px;font-weight:700;padding:9px 18px;border-radius:999px;cursor:pointer;box-shadow:var(--shadow);}
+
+  .float-nav{position:fixed;right:14px;bottom:24px;display:flex;flex-direction:column;gap:8px;z-index:50;}
+  .float-nav button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--bg2);color:var(--sub);font-size:16px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center;}
+  .float-nav button:active{background:var(--accent);color:var(--tab-ink);}
 </style>
 </head>
 <body>
@@ -110,7 +120,7 @@
 
   <div class="panel" id="panel-cat" style="display:none;">
     <div class="chips" id="catChips"></div>
-    <span class="hint">카테고리 이름을 누르면 그 카테고리만 보여요. ☆를 누르면 "관심" 탭에 저장돼요.</span>
+    <span class="hint">카테고리 이름을 누르면 그 카테고리만 보여요.</span>
   </div>
 
   <div class="panel" id="panel-date" style="display:none;">
@@ -119,11 +129,16 @@
   </div>
 
   <div class="panel" id="panel-fav" style="display:none;">
-    <span class="hint">★로 저장해둔 관심 카테고리만 모아서 보여줘요. 카테고리 탭에서 ★를 눌러 추가·삭제할 수 있어요.</span>
+    <span class="hint">★로 저장해둔 기사만 모아서 보여줘요. 각 카드 오른쪽 위 ☆를 눌러 추가·삭제할 수 있어요.</span>
   </div>
 
   <div class="count" id="countText"></div>
   <div id="list"></div>
+</div>
+
+<div class="float-nav">
+  <button id="btnTop" title="맨 위로">▲</button>
+  <button id="btnBottom" title="맨 아래로">▼</button>
 </div>
 
 <script>
@@ -175,9 +190,10 @@
   let catFilter = '';
   let dateFilter = '';
 
-  let favCats = new Set();
-  try{ favCats = new Set(JSON.parse(localStorage.getItem('favCats') || '[]')); }catch(e){}
-  function saveFavCats(){ try{ localStorage.setItem('favCats', JSON.stringify(Array.from(favCats))); }catch(e){} }
+  function itemKey(i){ return i.url || (i.title + '|' + i.ts); }
+  let favItems = new Set();
+  try{ favItems = new Set(JSON.parse(localStorage.getItem('favItems') || '[]')); }catch(e){}
+  function saveFavItems(){ try{ localStorage.setItem('favItems', JSON.stringify(Array.from(favItems))); }catch(e){} }
 
   const hourSelect = document.getElementById('hourSelect');
   for(let h=0; h<24; h++){
@@ -197,24 +213,11 @@
     const cats = Array.from(new Set(allItems.map(i=>i.category).filter(Boolean)));
     catChipsEl.innerHTML = '';
     cats.forEach(c=>{
-      const wrap = document.createElement('span');
-      wrap.className = 'chip-wrap';
       const b = document.createElement('button');
       b.className = 'chip' + (catFilter === c ? ' active' : '');
       b.textContent = c;
       b.onclick = ()=>{ catFilter = (catFilter === c) ? '' : c; render(); };
-      const star = document.createElement('button');
-      star.className = 'chip-star' + (favCats.has(c) ? ' on' : '');
-      star.textContent = favCats.has(c) ? '★' : '☆';
-      star.title = favCats.has(c) ? '관심 카테고리에서 빼기' : '관심 카테고리로 저장';
-      star.onclick = ()=>{
-        if(favCats.has(c)) favCats.delete(c); else favCats.add(c);
-        saveFavCats();
-        render();
-      };
-      wrap.appendChild(b);
-      wrap.appendChild(star);
-      catChipsEl.appendChild(wrap);
+      catChipsEl.appendChild(b);
     });
   }
 
@@ -260,7 +263,7 @@
     } else if(activeTab === 'date' && dateFilter){
       items = items.filter(i => dateStrKST(new Date(i.ts)) === dateFilter);
     } else if(activeTab === 'fav'){
-      items = items.filter(i => favCats.has(i.category));
+      items = items.filter(i => favItems.has(itemKey(i)));
     } else if(activeTab === 'live'){
       items = items.slice(0, 30);
     }
@@ -279,20 +282,22 @@
 
     const list = document.getElementById('list');
     if(items.length === 0){
-      if(activeTab === 'fav' && favCats.size === 0){
-        list.innerHTML = '<div class="empty">아직 저장한 관심 카테고리가 없어요.<br><b>"카테고리" 탭에서 ☆를 눌러 추가해보세요.</b></div>';
+      if(activeTab === 'fav' && favItems.size === 0){
+        list.innerHTML = '<div class="empty">아직 저장한 관심 기사가 없어요.<br><b>기사 카드의 ☆를 눌러 추가해보세요.</b></div>';
       } else {
         list.innerHTML = '<div class="empty">조건에 맞는 이슈가 없습니다.</div>';
       }
       return;
     }
 
-    list.innerHTML = items.map(i=>{
+    list.innerHTML = items.map((i, idx)=>{
       const m = metaFor(i.category);
       const hasUrl = !!(i.url && /^https?:\/\//.test(i.url));
       const tag = hasUrl ? 'a' : 'div';
       const attrs = hasUrl ? ' href="'+ escapeHtml(i.url) +'" target="_blank" rel="noopener noreferrer"' : '';
       const isNew = (nowMs - new Date(i.ts).getTime()) <= NEW_WINDOW_MS;
+      const key = itemKey(i);
+      const isFav = favItems.has(key);
       return '<'+tag+' class="card"'+attrs+'>'
         + '<div class="card-top">'
         +   '<div style="display:flex;align-items:center;gap:8px;">'
@@ -301,7 +306,10 @@
         +     '</span>'
         +     (isNew ? '<span class="new-badge">NEW</span>' : '')
         +   '</div>'
-        +   '<span class="time">'+ fmtTime(new Date(i.ts)) +'</span>'
+        +   '<div style="display:flex;align-items:center;gap:6px;">'
+        +     '<button class="card-star'+(isFav?' on':'')+'" data-key="'+escapeHtml(key)+'" title="'+(isFav?'관심 기사에서 빼기':'관심 기사로 저장')+'">'+(isFav?'★':'☆')+'</button>'
+        +     '<span class="time">'+ fmtTime(new Date(i.ts)) +'</span>'
+        +   '</div>'
         + '</div>'
         + '<div class="title">'+ escapeHtml(i.title||'') +'</div>'
         + '<div class="summary">'+ escapeHtml(i.summary||'') +'</div>'
@@ -310,7 +318,20 @@
         +   '<span>'+ escapeHtml(i.tags||'') + (hasUrl ? ' <span class="link-hint">· 기사 보기 ↗</span>' : '') +'</span>'
         + '</div>'
       + '</'+tag+'>';
-    }).join('');
+    }).join('') + '<div class="backtop-hint"><button id="backTopBtn">▲ 맨 위로</button></div>';
+
+    list.querySelectorAll('.card-star').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault(); e.stopPropagation();
+        const key = btn.getAttribute('data-key');
+        if(!key) return;
+        if(favItems.has(key)) favItems.delete(key); else favItems.add(key);
+        saveFavItems();
+        render();
+      });
+    });
+    const backTopBtn = document.getElementById('backTopBtn');
+    if(backTopBtn){ backTopBtn.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'})); }
   }
 
   function escapeHtml(s){
@@ -366,6 +387,13 @@
   load();
   setInterval(load, 60000);
   setInterval(updateStatusText, 30000);
+
+  document.getElementById('btnTop').addEventListener('click', ()=>{
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+  document.getElementById('btnBottom').addEventListener('click', ()=>{
+    window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'});
+  });
 })();
 </script>
 </body>
