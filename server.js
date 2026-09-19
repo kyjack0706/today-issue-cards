@@ -31,7 +31,7 @@ async function refresh(){
      let title=a.title||a.name||"",url=a.url||a.original_url||a.link||"";if(!title||!url||map.has(url))continue;
      let ts=a.published_at||a.publishedAt||a.pubDate||a.date||new Date().toISOString(),d=a.description||a.summary||a.content||"";
      let source=(a.publisher&& (a.publisher.name||a.publisher))||a.source||a.sitename||a.host||"Free News API";
-     map.set(url,{title,summary:summary(d,title),category,source,url,tags:[category,...title.split(/\s+/).filter(w=>w.length>=2)].slice(0,3).map(w=>"#"+w.replace(/[“”"'‘’·,:!?()[\]]/g,"")).join(" "),ts:new Date(ts).toISOString()});added++;
+     map.set(url,{title,summary:summary(d,title),category,keyword:kw,source,url,tags:[category,...title.split(/\s+/).filter(w=>w.length>=2)].slice(0,3).map(w=>"#"+w.replace(/[“”"'‘’·,:!?()[\]]/g,"")).join(" "),ts:new Date(ts).toISOString()});added++;
     }
    }catch(e){console.error("Free News API:",category,kw,e.message)}
    await sleep(1000);
