@@ -31,7 +31,8 @@ async function refresh(){
      let title=a.title||a.name||"",url=a.url||a.original_url||a.link||"";if(!title||!url||map.has(url))continue;
      let ts=a.published_at||a.publishedAt||a.pubDate||a.date||new Date().toISOString(),d=a.description||a.summary||a.content||"";
      let source=(a.publisher&& (a.publisher.name||a.publisher))||a.source||a.sitename||a.host||"Free News API";
-     map.set(url,{title,summary:summary(d,title),category,keyword:kw,source,url,tags:[category,...title.split(/\s+/).filter(w=>w.length>=2)].slice(0,3).map(w=>"#"+w.replace(/[“”"'‘’·,:!?()[\]]/g,"")).join(" "),ts:new Date(ts).toISOString()});added++;
+     let image=a.image||a.image_url||a.thumbnail||a.top_image||"";
+     map.set(url,{title,summary:summary(d,title),category,keyword:kw,source,url,image,tags:[category,...title.split(/\s+/).filter(w=>w.length>=2)].slice(0,3).map(w=>"#"+w.replace(/[“”"'‘’·,:!?()[\]]/g,"")).join(" "),ts:new Date(ts).toISOString()});added++;
     }
    }catch(e){console.error("Free News API:",category,kw,e.message)}
    await sleep(1000);
@@ -47,6 +48,12 @@ http.createServer(async(req,res)=>{
   if(u.pathname==="/api/news"){res.writeHead(200,{"Content-Type":mime[".json"],"Cache-Control":"no-store"});return res.end(JSON.stringify(read()))}
   if(u.pathname==="/api/meta"){res.writeHead(200,{"Content-Type":mime[".json"],"Cache-Control":"no-store"});return res.end(JSON.stringify({lastUpdated}))}
   if(u.pathname==="/api/refresh"){let x=await refresh();res.writeHead(200,{"Content-Type":mime[".json"]});return res.end(JSON.stringify({ok:true,count:x.length}))}
+  if(u.pathname==="/api/img"){
+   let src=u.searchParams.get("u");if(!src||!/^https?:\/\//.test(src))throw Error("400");
+   let r=await fetch(src);if(!r.ok)throw Error(r.status);
+   res.writeHead(200,{"Content-Type":r.headers.get("content-type")||"image/jpeg","Cache-Control":"public, max-age=86400"});
+   return require("stream").Readable.fromWeb(r.body).pipe(res);
+  }
   let f=path.join(ROOT,u.pathname==="/"?"index.html":u.pathname);if(!f.startsWith(ROOT)||!fs.existsSync(f))throw Error("404");
   res.writeHead(200,{"Content-Type":mime[path.extname(f)]||"application/octet-stream"});fs.createReadStream(f).pipe(res);
  }catch(e){res.writeHead(500);res.end(e.message)}
