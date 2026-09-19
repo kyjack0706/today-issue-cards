@@ -56,7 +56,7 @@
   .new-count{color:var(--new);font-weight:800;}
   .new-badge{background:var(--new);color:var(--new-ink);font-size:10px;font-weight:900;letter-spacing:0.04em;padding:3px 7px;border-radius:5px;}
 
-  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:14px;display:block;text-decoration:none;color:inherit;transition:border-color .15s, box-shadow .15s;box-shadow:var(--shadow);}
+  .card{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px 46px 20px 22px;margin-bottom:14px;display:block;text-decoration:none;color:inherit;transition:border-color .15s, box-shadow .15s;box-shadow:var(--shadow);}
   a.card{cursor:pointer;}
   a.card:hover{border-color:var(--accent);}
   .link-hint{color:var(--accent);font-weight:700;}
@@ -71,8 +71,10 @@
   .empty{text-align:center;color:var(--mute);font-size:14px;padding:60px 20px;}
   .empty b{color:var(--sub);}
 
-  .card-star{border:none;background:transparent;color:var(--mute);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
+  .card-star{position:absolute;top:14px;right:14px;border:none;background:transparent;color:var(--mute);font-size:19px;cursor:pointer;padding:4px;line-height:1;z-index:2;}
   .card-star.on{color:#f2b705;}
+  .card.read{opacity:0.55;}
+  .read-count{font-size:11px;color:var(--mute);}
 
   .backtop-hint{display:flex;justify-content:center;padding:18px 0 4px;}
   .backtop-hint button{border:1px solid var(--line);background:var(--bg2);color:var(--sub);font-size:13px;font-weight:700;padding:9px 18px;border-radius:999px;cursor:pointer;box-shadow:var(--shadow);}
@@ -195,6 +197,10 @@
   try{ favItems = new Set(JSON.parse(localStorage.getItem('favItems') || '[]')); }catch(e){}
   function saveFavItems(){ try{ localStorage.setItem('favItems', JSON.stringify(Array.from(favItems))); }catch(e){} }
 
+  let readCounts = {};
+  try{ readCounts = JSON.parse(localStorage.getItem('readCounts') || '{}'); }catch(e){}
+  function saveReadCounts(){ try{ localStorage.setItem('readCounts', JSON.stringify(readCounts)); }catch(e){} }
+
   const hourSelect = document.getElementById('hourSelect');
   for(let h=0; h<24; h++){
     const opt = document.createElement('option');
@@ -298,18 +304,19 @@
       const isNew = (nowMs - new Date(i.ts).getTime()) <= NEW_WINDOW_MS;
       const key = itemKey(i);
       const isFav = favItems.has(key);
-      return '<'+tag+' class="card"'+attrs+'>'
+      const readN = readCounts[key] || 0;
+      const isRead = readN > 0;
+      return '<'+tag+' class="card'+(isRead?' read':'')+'"'+attrs+' data-key="'+escapeHtml(key)+'">'
+        + '<button class="card-star'+(isFav?' on':'')+'" data-key="'+escapeHtml(key)+'" title="'+(isFav?'관심 기사에서 빼기':'관심 기사로 저장')+'">'+(isFav?'★':'☆')+'</button>'
         + '<div class="card-top">'
         +   '<div style="display:flex;align-items:center;gap:8px;">'
         +     '<span class="tag" style="background:'+m.bg+';border:1px solid '+m.border+';color:'+m.color+';">'
         +       '<span class="d" style="background:'+m.color+';"></span>'+ (i.category||'이슈')
         +     '</span>'
         +     (isNew ? '<span class="new-badge">NEW</span>' : '')
+        +     (isRead ? '<span class="read-count">읽음 · '+readN+'회</span>' : '')
         +   '</div>'
-        +   '<div style="display:flex;align-items:center;gap:6px;">'
-        +     '<button class="card-star'+(isFav?' on':'')+'" data-key="'+escapeHtml(key)+'" title="'+(isFav?'관심 기사에서 빼기':'관심 기사로 저장')+'">'+(isFav?'★':'☆')+'</button>'
-        +     '<span class="time">'+ fmtTime(new Date(i.ts)) +'</span>'
-        +   '</div>'
+        +   '<span class="time">'+ fmtTime(new Date(i.ts)) +'</span>'
         + '</div>'
         + '<div class="title">'+ escapeHtml(i.title||'') +'</div>'
         + '<div class="summary">'+ escapeHtml(i.summary||'') +'</div>'
@@ -320,6 +327,15 @@
       + '</'+tag+'>';
     }).join('') + '<div class="backtop-hint"><button id="backTopBtn">▲ 맨 위로</button></div>';
 
+    list.querySelectorAll('a.card').forEach(cardEl=>{
+      cardEl.addEventListener('click', ()=>{
+        const key = cardEl.getAttribute('data-key');
+        if(!key) return;
+        readCounts[key] = (readCounts[key] || 0) + 1;
+        saveReadCounts();
+        setTimeout(render, 50);
+      });
+    });
     list.querySelectorAll('.card-star').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.preventDefault(); e.stopPropagation();
