@@ -20,6 +20,7 @@ async function search(q){
  let u=new URL(API);u.searchParams.set("q",q);u.searchParams.set("country","KR");u.searchParams.set("lang","ko");u.searchParams.set("sort","date");u.searchParams.set("size","30");
  let r=await fetch(u);console.log("API status",r.status,q);if(!r.ok)throw Error(r.status);let j=await r.json();console.log("API result count",q,(j.results||j.articles||[]).length);return j;
 }
+let lastUpdated=null;
 async function refresh(){
  let map=new Map(read().map(x=>[x.url,x])),added=0;
  for(const [category,keywords] of QUERIES){
@@ -37,13 +38,14 @@ async function refresh(){
   }
  }
  let cut=Date.now()-7*864e5,out=[...map.values()].filter(x=>new Date(x.ts)>=cut).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
- write(out);console.log("Free News API 갱신",added,"신규 /",out.length,"개 보관");return out;
+ write(out);lastUpdated=new Date().toISOString();console.log("Free News API 갱신",added,"신규 /",out.length,"개 보관");return out;
 }
 const mime={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json; charset=utf-8"};
 http.createServer(async(req,res)=>{
  try{
   let u=new URL(req.url,"http://localhost");
   if(u.pathname==="/api/news"){res.writeHead(200,{"Content-Type":mime[".json"],"Cache-Control":"no-store"});return res.end(JSON.stringify(read()))}
+  if(u.pathname==="/api/meta"){res.writeHead(200,{"Content-Type":mime[".json"],"Cache-Control":"no-store"});return res.end(JSON.stringify({lastUpdated}))}
   if(u.pathname==="/api/refresh"){let x=await refresh();res.writeHead(200,{"Content-Type":mime[".json"]});return res.end(JSON.stringify({ok:true,count:x.length}))}
   let f=path.join(ROOT,u.pathname==="/"?"index.html":u.pathname);if(!f.startsWith(ROOT)||!fs.existsSync(f))throw Error("404");
   res.writeHead(200,{"Content-Type":mime[path.extname(f)]||"application/octet-stream"});fs.createReadStream(f).pipe(res);
