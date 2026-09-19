@@ -46,8 +46,11 @@
   }
   .panel .hint{font-size:12px;color:var(--mute);width:100%;}
   .chips{display:flex;flex-wrap:wrap;gap:8px;}
-  .chip{padding:7px 14px;border-radius:999px;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--sub);cursor:pointer;}
-  .chip.active{border-color:var(--accent);color:var(--accent);background:rgba(217,119,87,0.1);}
+  .chip-wrap{display:inline-flex;align-items:center;gap:2px;border-radius:999px;border:1px solid var(--line);background:var(--bg);}
+  .chip{padding:7px 12px 7px 14px;border-radius:999px 0 0 999px;font-size:13px;border:none;background:transparent;color:var(--sub);cursor:pointer;}
+  .chip.active{color:var(--accent);background:rgba(217,119,87,0.1);}
+  .chip-star{padding:7px 12px 7px 4px;border-radius:0 999px 999px 0;font-size:13px;border:none;background:transparent;color:var(--mute);cursor:pointer;}
+  .chip-star.on{color:#f2b705;}
 
   .count{font-size:13px;color:var(--mute);margin:0 2px 12px;}
   .new-count{color:var(--new);font-weight:800;}
@@ -91,6 +94,7 @@
     <button class="tab" data-tab="hour">시간별</button>
     <button class="tab" data-tab="cat">카테고리</button>
     <button class="tab" data-tab="date">날짜</button>
+    <button class="tab" data-tab="fav">관심</button>
   </div>
 
   <div class="panel" id="panel-live">
@@ -106,12 +110,16 @@
 
   <div class="panel" id="panel-cat" style="display:none;">
     <div class="chips" id="catChips"></div>
-    <span class="hint">카테고리를 클릭해서 필터링하거나, 위 검색창을 사용하세요.</span>
+    <span class="hint">카테고리 이름을 누르면 그 카테고리만 보여요. ☆를 누르면 "관심" 탭에 저장돼요.</span>
   </div>
 
   <div class="panel" id="panel-date" style="display:none;">
     <input id="dateSelect" type="date">
     <span class="hint" id="dateHint">최근 7일 중에서 날짜를 골라주세요.</span>
+  </div>
+
+  <div class="panel" id="panel-fav" style="display:none;">
+    <span class="hint">★로 저장해둔 관심 카테고리만 모아서 보여줘요. 카테고리 탭에서 ★를 눌러 추가·삭제할 수 있어요.</span>
   </div>
 
   <div class="count" id="countText"></div>
@@ -167,6 +175,10 @@
   let catFilter = '';
   let dateFilter = '';
 
+  let favCats = new Set();
+  try{ favCats = new Set(JSON.parse(localStorage.getItem('favCats') || '[]')); }catch(e){}
+  function saveFavCats(){ try{ localStorage.setItem('favCats', JSON.stringify(Array.from(favCats))); }catch(e){} }
+
   const hourSelect = document.getElementById('hourSelect');
   for(let h=0; h<24; h++){
     const opt = document.createElement('option');
@@ -185,11 +197,24 @@
     const cats = Array.from(new Set(allItems.map(i=>i.category).filter(Boolean)));
     catChipsEl.innerHTML = '';
     cats.forEach(c=>{
+      const wrap = document.createElement('span');
+      wrap.className = 'chip-wrap';
       const b = document.createElement('button');
       b.className = 'chip' + (catFilter === c ? ' active' : '');
       b.textContent = c;
       b.onclick = ()=>{ catFilter = (catFilter === c) ? '' : c; render(); };
-      catChipsEl.appendChild(b);
+      const star = document.createElement('button');
+      star.className = 'chip-star' + (favCats.has(c) ? ' on' : '');
+      star.textContent = favCats.has(c) ? '★' : '☆';
+      star.title = favCats.has(c) ? '관심 카테고리에서 빼기' : '관심 카테고리로 저장';
+      star.onclick = ()=>{
+        if(favCats.has(c)) favCats.delete(c); else favCats.add(c);
+        saveFavCats();
+        render();
+      };
+      wrap.appendChild(b);
+      wrap.appendChild(star);
+      catChipsEl.appendChild(wrap);
     });
   }
 
@@ -207,7 +232,7 @@
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      ['live','hour','cat','date'].forEach(t=>{
+      ['live','hour','cat','date','fav'].forEach(t=>{
         document.getElementById('panel-'+t).style.display = (t === btn.dataset.tab) ? 'flex' : 'none';
       });
       activeTab = btn.dataset.tab;
@@ -234,6 +259,8 @@
       items = items.filter(i => (i.category||'') === catFilter);
     } else if(activeTab === 'date' && dateFilter){
       items = items.filter(i => dateStrKST(new Date(i.ts)) === dateFilter);
+    } else if(activeTab === 'fav'){
+      items = items.filter(i => favCats.has(i.category));
     } else if(activeTab === 'live'){
       items = items.slice(0, 30);
     }
@@ -252,7 +279,11 @@
 
     const list = document.getElementById('list');
     if(items.length === 0){
-      list.innerHTML = '<div class="empty">조건에 맞는 이슈가 없습니다.</div>';
+      if(activeTab === 'fav' && favCats.size === 0){
+        list.innerHTML = '<div class="empty">아직 저장한 관심 카테고리가 없어요.<br><b>"카테고리" 탭에서 ☆를 눌러 추가해보세요.</b></div>';
+      } else {
+        list.innerHTML = '<div class="empty">조건에 맞는 이슈가 없습니다.</div>';
+      }
       return;
     }
 
@@ -294,26 +325,47 @@
     return String(k.getHours()).padStart(2,'0') + ':' + String(k.getMinutes()).padStart(2,'0');
   }
 
+  let lastUpdatedIso = null;
+  let connected = false;
+
+  function updateStatusText(){
+    if(!connected){ liveText.textContent = '연결 오류'; return; }
+    let text = '연결됨 · ' + allItems.length + '건';
+    if(lastUpdatedIso){
+      text += ' · ' + fmtHM(lastUpdatedIso) + ' 업데이트';
+      const remainMs = new Date(lastUpdatedIso).getTime() + 3600000 - Date.now();
+      if(remainMs > 60000){
+        text += ' · 다음 갱신까지 ' + Math.round(remainMs/60000) + '분';
+      } else if(remainMs > 0){
+        text += ' · 곧 갱신 예정';
+      } else {
+        text += ' · 갱신 대기 중';
+      }
+    }
+    liveText.textContent = text;
+  }
+
   async function load(){
     try{
       const r = await fetch('/api/news');
       allItems = await r.json();
-      let updatedLabel = '';
       try{
         const mr = await fetch('/api/meta');
         const meta = await mr.json();
-        if(meta && meta.lastUpdated){ updatedLabel = ' · ' + fmtHM(meta.lastUpdated) + ' 업데이트'; }
+        if(meta && meta.lastUpdated){ lastUpdatedIso = meta.lastUpdated; }
       }catch(e){}
+      connected = true;
       liveDot.classList.remove('off');
-      liveText.textContent = '연결됨 · ' + allItems.length + '건' + updatedLabel;
     }catch(e){
+      connected = false;
       liveDot.classList.add('off');
-      liveText.textContent = '연결 오류';
     }
+    updateStatusText();
     render();
   }
   load();
   setInterval(load, 60000);
+  setInterval(updateStatusText, 30000);
 })();
 </script>
 </body>
