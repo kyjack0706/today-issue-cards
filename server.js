@@ -14,7 +14,13 @@ const API="https://freenewsapi.ai/v1/search";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const read=()=>{try{return JSON.parse(fs.readFileSync(DATA,"utf8"))}catch{return[]}};
 const write=x=>fs.writeFileSync(DATA,JSON.stringify(x,null,2));
-const strip=s=>(s||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+const decodeEntities=s=>(s||"")
+ .replace(/&quot;/g,'"').replace(/&#0?34;/g,'"')
+ .replace(/&apos;/g,"'").replace(/&#0?39;/g,"'")
+ .replace(/&lt;/g,"<").replace(/&gt;/g,">")
+ .replace(/&nbsp;/g," ")
+ .replace(/&amp;/g,"&");
+const strip=s=>decodeEntities((s||"").replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
 const summary=(d,t)=>{d=strip(d);if(!d)return t+" 관련 최신 기사입니다. 원문에서 자세한 내용을 확인할 수 있습니다.";return d.split(/(?<=[.!?。！？])\s+/).filter(Boolean).slice(0,3).join(" ").slice(0,500)};
 async function search(q){
  let u=new URL(API);u.searchParams.set("q",q);u.searchParams.set("country","KR");u.searchParams.set("lang","ko");u.searchParams.set("sort","date");u.searchParams.set("size","30");
@@ -28,7 +34,7 @@ async function refresh(){
    try{
     let j=await search(kw), arr=j.articles||j.results||[];
     for(const a of arr){
-     let title=a.title||a.name||"",url=a.url||a.original_url||a.link||"";if(!title||!url||map.has(url))continue;
+     let title=decodeEntities(a.title||a.name||""),url=a.url||a.original_url||a.link||"";if(!title||!url||map.has(url))continue;
      let ts=a.published_at||a.publishedAt||a.pubDate||a.date||new Date().toISOString(),d=a.description||a.summary||a.content||"";
      let source=(a.publisher&& (a.publisher.name||a.publisher))||a.source||a.sitename||a.host||"Free News API";
      let image=a.image||a.image_url||a.thumbnail||a.top_image||"";
