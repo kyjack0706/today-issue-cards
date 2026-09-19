@@ -87,7 +87,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="brand">ISSUE PICK (YJ재밌다 히히히) </div>
+    <div class="brand">ISSUE PICK (YJ재밌따 히히히) </div>
     <div class="theme-toggle">
       <button class="theme-btn" id="btnDark" title="어두운 배경">🌙 어두운</button>
       <button class="theme-btn" id="btnLight" title="밝은 배경">☀️ 밝은</button>
@@ -122,7 +122,8 @@
 
   <div class="panel" id="panel-cat" style="display:none;">
     <div class="chips" id="catChips"></div>
-    <span class="hint">카테고리 이름을 누르면 그 카테고리만 보여요.</span>
+    <div class="chips" id="subChips" style="display:none;"></div>
+    <span class="hint">카테고리 이름을 누르면 그 카테고리만 보여요. 하위 키워드로 더 좁힐 수도 있어요.</span>
   </div>
 
   <div class="panel" id="panel-date" style="display:none;">
@@ -190,6 +191,7 @@
   let activeTab = 'live';
   let hourFilter = '';
   let catFilter = '';
+  let subKwFilter = '';
   let dateFilter = '';
 
   function itemKey(i){ return i.url || (i.title + '|' + i.ts); }
@@ -215,6 +217,7 @@
   globalSearch.addEventListener('input', ()=>{ searchQuery = globalSearch.value.trim(); render(); });
 
   const catChipsEl = document.getElementById('catChips');
+  const subChipsEl = document.getElementById('subChips');
   function renderCatChips(){
     const cats = Array.from(new Set(allItems.map(i=>i.category).filter(Boolean)));
     catChipsEl.innerHTML = '';
@@ -222,9 +225,29 @@
       const b = document.createElement('button');
       b.className = 'chip' + (catFilter === c ? ' active' : '');
       b.textContent = c;
-      b.onclick = ()=>{ catFilter = (catFilter === c) ? '' : c; render(); };
+      b.onclick = ()=>{
+        if(catFilter === c){ catFilter = ''; subKwFilter = ''; }
+        else { catFilter = c; subKwFilter = ''; }
+        render();
+      };
       catChipsEl.appendChild(b);
     });
+
+    if(catFilter){
+      const kws = Array.from(new Set(allItems.filter(i=>i.category===catFilter).map(i=>i.keyword).filter(Boolean)));
+      subChipsEl.innerHTML = '';
+      subChipsEl.style.display = kws.length ? 'flex' : 'none';
+      kws.forEach(kw=>{
+        const b = document.createElement('button');
+        b.className = 'chip' + (subKwFilter === kw ? ' active' : '');
+        b.textContent = kw;
+        b.onclick = ()=>{ subKwFilter = (subKwFilter === kw) ? '' : kw; render(); };
+        subChipsEl.appendChild(b);
+      });
+    } else {
+      subChipsEl.innerHTML = '';
+      subChipsEl.style.display = 'none';
+    }
   }
 
   const dateSelect = document.getElementById('dateSelect');
@@ -266,6 +289,7 @@
       items = items.filter(i => hourKST(new Date(i.ts)) === Number(hourFilter));
     } else if(activeTab === 'cat' && catFilter){
       items = items.filter(i => (i.category||'') === catFilter);
+      if(subKwFilter){ items = items.filter(i => i.keyword === subKwFilter); }
     } else if(activeTab === 'date' && dateFilter){
       items = items.filter(i => dateStrKST(new Date(i.ts)) === dateFilter);
     } else if(activeTab === 'fav'){
