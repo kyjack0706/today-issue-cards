@@ -48,6 +48,8 @@
   }
   .panel .hint{font-size:12px;color:var(--mute);width:100%;}
   .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .sub-chips-wrap{width:100%;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .sub-chips-label{font-size:11px;color:var(--mute);width:100%;margin-bottom:6px;}
   .chip-wrap{display:inline-flex;align-items:center;gap:2px;border-radius:999px;border:1px solid var(--line);background:var(--bg);}
   .chip{padding:7px 12px 7px 14px;border-radius:999px 0 0 999px;font-size:13px;border:none;background:transparent;color:var(--sub);cursor:pointer;}
   .chip.active{color:var(--accent);background:rgba(217,119,87,0.1);}
@@ -126,7 +128,10 @@
 
   <div class="panel" id="panel-cat" style="display:none;">
     <div class="chips" id="catChips"></div>
-    <div class="chips" id="subChips" style="display:none;"></div>
+    <div class="sub-chips-wrap" id="subChipsWrap" style="display:none;">
+      <div class="sub-chips-label">관련 키워드</div>
+      <div class="chips" id="subChips"></div>
+    </div>
     <span class="hint">카테고리 이름을 누르면 그 카테고리만 보여요. 하위 키워드로 더 좁힐 수도 있어요.</span>
   </div>
 
@@ -222,6 +227,7 @@
 
   const catChipsEl = document.getElementById('catChips');
   const subChipsEl = document.getElementById('subChips');
+  const subChipsWrapEl = document.getElementById('subChipsWrap');
   function renderCatChips(){
     const cats = Array.from(new Set(allItems.map(i=>i.category).filter(Boolean)));
     catChipsEl.innerHTML = '';
@@ -240,7 +246,7 @@
     if(catFilter){
       const kws = Array.from(new Set(allItems.filter(i=>i.category===catFilter).map(i=>i.keyword).filter(Boolean)));
       subChipsEl.innerHTML = '';
-      subChipsEl.style.display = kws.length ? 'flex' : 'none';
+      subChipsWrapEl.style.display = kws.length ? 'block' : 'none';
       kws.forEach(kw=>{
         const b = document.createElement('button');
         b.className = 'chip' + (subKwFilter === kw ? ' active' : '');
@@ -250,7 +256,7 @@
       });
     } else {
       subChipsEl.innerHTML = '';
-      subChipsEl.style.display = 'none';
+      subChipsWrapEl.style.display = 'none';
     }
   }
 
