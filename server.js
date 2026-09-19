@@ -15,10 +15,12 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const read=()=>{try{return JSON.parse(fs.readFileSync(DATA,"utf8"))}catch{return[]}};
 const write=x=>fs.writeFileSync(DATA,JSON.stringify(x,null,2));
 const decodeEntities=s=>(s||"")
- .replace(/&quot;/g,'"').replace(/&#0?34;/g,'"')
- .replace(/&apos;/g,"'").replace(/&#0?39;/g,"'")
+ .replace(/&quot;/g,'"')
+ .replace(/&apos;/g,"'")
  .replace(/&lt;/g,"<").replace(/&gt;/g,">")
  .replace(/&nbsp;/g," ")
+ .replace(/&#x([0-9a-fA-F]+);/g,(m,h)=>String.fromCodePoint(parseInt(h,16)))
+ .replace(/&#(\d+);/g,(m,d)=>String.fromCodePoint(parseInt(d,10)))
  .replace(/&amp;/g,"&");
 const strip=s=>decodeEntities((s||"").replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
 const summary=(d,t)=>{d=strip(d);if(!d)return t+" 관련 최신 기사입니다. 원문에서 자세한 내용을 확인할 수 있습니다.";return d.split(/(?<=[.!?。！？])\s+/).filter(Boolean).slice(0,3).join(" ").slice(0,500)};
