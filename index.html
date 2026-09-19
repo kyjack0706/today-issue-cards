@@ -31,6 +31,8 @@
   .theme-btn{border:none;background:transparent;color:var(--mute);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;}
   .theme-btn.active{background:var(--accent);color:var(--tab-ink);}
 
+  .sticky-wrap{position:sticky;top:0;z-index:40;background:var(--bg);padding-top:6px;margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;}
+
   .search-bar{margin-bottom:12px;}
   .search-bar input{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:12px 16px;font-size:14px;font-family:inherit;box-shadow:var(--shadow);}
   .search-bar input::placeholder{color:var(--mute);}
@@ -87,7 +89,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="brand">ISSUE PICK (YJ재밌따 히히히) </div>
+    <div class="brand">ISSUE PICK (YJ재밌다 히히히)</div>
     <div class="theme-toggle">
       <button class="theme-btn" id="btnDark" title="어두운 배경">🌙 어두운</button>
       <button class="theme-btn" id="btnLight" title="밝은 배경">☀️ 밝은</button>
@@ -97,16 +99,18 @@
     <div class="status"><span class="dot off" id="liveDot"></span><span id="liveText">연결 중…</span></div>
   </div>
 
-  <div class="search-bar">
-    <input id="globalSearch" type="text" placeholder="🔍 제목·키워드로 검색 (예: 아이폰, 손예진, 부동산...)">
-  </div>
+  <div class="sticky-wrap">
+    <div class="search-bar">
+      <input id="globalSearch" type="text" placeholder="🔍 제목·키워드로 검색 (예: 아이폰, 손예진, 부동산...)">
+    </div>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="live">실시간</button>
-    <button class="tab" data-tab="hour">시간별</button>
-    <button class="tab" data-tab="cat">카테고리</button>
-    <button class="tab" data-tab="date">날짜</button>
-    <button class="tab" data-tab="fav">관심</button>
+    <div class="tabs">
+      <button class="tab active" data-tab="live">실시간</button>
+      <button class="tab" data-tab="hour">시간별</button>
+      <button class="tab" data-tab="cat">카테고리</button>
+      <button class="tab" data-tab="date">날짜</button>
+      <button class="tab" data-tab="fav">관심</button>
+    </div>
   </div>
 
   <div class="panel" id="panel-live">
