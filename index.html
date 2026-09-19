@@ -289,8 +289,8 @@
   const liveDot = document.getElementById('liveDot');
   const liveText = document.getElementById('liveText');
 
-  function nowKSTLabel(){
-    const k = toKST(new Date());
+  function fmtHM(iso){
+    const k = toKST(new Date(iso));
     return String(k.getHours()).padStart(2,'0') + ':' + String(k.getMinutes()).padStart(2,'0');
   }
 
@@ -298,8 +298,14 @@
     try{
       const r = await fetch('/api/news');
       allItems = await r.json();
+      let updatedLabel = '';
+      try{
+        const mr = await fetch('/api/meta');
+        const meta = await mr.json();
+        if(meta && meta.lastUpdated){ updatedLabel = ' · ' + fmtHM(meta.lastUpdated) + ' 업데이트'; }
+      }catch(e){}
       liveDot.classList.remove('off');
-      liveText.textContent = '연결됨 · ' + allItems.length + '건 · ' + nowKSTLabel() + ' 업데이트';
+      liveText.textContent = '연결됨 · ' + allItems.length + '건' + updatedLabel;
     }catch(e){
       liveDot.classList.add('off');
       liveText.textContent = '연결 오류';
