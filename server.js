@@ -53,7 +53,10 @@ const mime={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=u
 http.createServer(async(req,res)=>{
  try{
   let u=new URL(req.url,"http://localhost");
-  if(u.pathname==="/api/news"){res.writeHead(200,{"Content-Type":mime[".json"],"Cache-Control":"no-store"});return res.end(JSON.stringify(read()))}
+  if(u.pathname==="/api/news"){
+   let out=read().map(x=>({...x,title:decodeEntities(x.title||""),summary:decodeEntities(x.summary||"")}));
+   res.writeHead(200,{"Content-Type":mime[".json"],"Cache-Control":"no-store"});return res.end(JSON.stringify(out));
+  }
   if(u.pathname==="/api/meta"){res.writeHead(200,{"Content-Type":mime[".json"],"Cache-Control":"no-store"});return res.end(JSON.stringify({lastUpdated}))}
   if(u.pathname==="/api/refresh"){let x=await refresh();res.writeHead(200,{"Content-Type":mime[".json"]});return res.end(JSON.stringify({ok:true,count:x.length}))}
   if(u.pathname==="/api/img"){
